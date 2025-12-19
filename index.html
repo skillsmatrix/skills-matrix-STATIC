@@ -25,9 +25,55 @@
             --border-color: #e2e8f0;
             --shadow-glow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #334155;
+            --shadow-glow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Dark mode toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent-pink);
+            color: var(--text-primary);
+        }
+
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .theme-toggle .sun-icon { display: none; }
+        .theme-toggle .moon-icon { display: block; }
+
+        [data-theme="dark"] .theme-toggle .sun-icon { display: block; }
+        [data-theme="dark"] .theme-toggle .moon-icon { display: none; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.6; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 40px 24px; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px 24px; position: relative; }
         .header { text-align: center; margin-bottom: 48px; }
         .header h1 { font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, var(--accent-pink), var(--accent-orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
         .header p { color: var(--text-secondary); font-size: 1.1rem; }
@@ -117,6 +163,23 @@
 </head>
 <body>
     <div class="container">
+        <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <span class="toggle-text">Dark</span>
+        </button>
         <header class="header">
             <h1>SKILLS MATRIX</h1>
             <p>Find the right technician for the job</p>
@@ -311,11 +374,30 @@
         let selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [] };
 
         document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
             initMultiSelects();
             attachEventListeners();
             fetchEmployees();
             fetchPresets();
         });
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateToggleText(savedTheme);
+            
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateToggleText(newTheme);
+            });
+        }
+
+        function updateToggleText(theme) {
+            document.querySelector('.toggle-text').textContent = theme === 'dark' ? 'Light' : 'Dark';
+        }
 
         function initMultiSelects() {
             const containers = {
