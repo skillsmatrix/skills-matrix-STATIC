@@ -83,7 +83,26 @@
         .status-dot.error { background: #ef4444; animation: none; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .main-layout { display: grid; grid-template-columns: 420px 1fr; gap: 32px; }
-        @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
+        @media (max-width: 1024px) { 
+            .main-layout { grid-template-columns: 1fr; }
+            .filter-panel { position: relative; top: 0; }
+        }
+        @media (max-width: 768px) {
+            .container { padding: 20px 16px; }
+            .header h1 { font-size: 1.8rem; }
+            .header p { font-size: 0.95rem; }
+            .theme-toggle { top: 16px; right: 16px; padding: 6px 10px; font-size: 0.8rem; }
+            .theme-toggle .toggle-text { display: none; }
+            .filter-panel { padding: 20px; border-radius: 12px; }
+            .filter-panel h2 { font-size: 1.1rem; margin-bottom: 20px; }
+            .filter-section { margin-bottom: 16px; }
+            .results-panel { padding: 20px; border-radius: 12px; }
+            .results-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+            .employee-grid { grid-template-columns: 1fr; }
+            .employee-card { padding: 16px; }
+            .employee-skills { gap: 4px; }
+            .skill-tag, .rating-badge { font-size: 0.7rem; padding: 3px 8px; }
+        }
         .filter-panel { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px; height: fit-content; position: sticky; top: 24px; box-shadow: var(--shadow-glow); }
         .filter-panel h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
         .filter-panel h2::before { content: ''; width: 4px; height: 20px; background: linear-gradient(180deg, var(--accent-pink), var(--accent-orange)); border-radius: 2px; }
