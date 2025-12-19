@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills Matrix | Find Your Tech</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            --accent-blue: #2563eb;
+            --accent-cyan: #0891b2;
+            --accent-green: #059669;
+            --accent-orange: #d97706;
+            --accent-purple: #7c3aed;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-glow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px 24px; }
+        .header { text-align: center; margin-bottom: 48px; }
+        .header h1 { font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
+        .header p { color: var(--text-secondary); font-size: 1.1rem; }
+        .connection-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; font-size: 0.875rem; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-orange); animation: pulse 2s infinite; }
+        .status-dot.connected { background: var(--accent-green); animation: none; }
+        .status-dot.error { background: #ef4444; animation: none; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .main-layout { display: grid; grid-template-columns: 420px 1fr; gap: 32px; }
+        @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
+        .filter-panel { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px; height: fit-content; position: sticky; top: 24px; box-shadow: var(--shadow-glow); }
+        .filter-panel h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+        .filter-panel h2::before { content: ''; width: 4px; height: 20px; background: linear-gradient(180deg, var(--accent-blue), var(--accent-cyan)); border-radius: 2px; }
+        .filter-section { margin-bottom: 20px; }
+        .filter-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .filter-label .count { font-size: 0.7rem; background: var(--accent-blue); color: white; padding: 2px 8px; border-radius: 10px; }
+        .multi-select { position: relative; }
+        .multi-select-trigger { width: 100%; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-primary); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease; }
+        .multi-select-trigger:hover { border-color: var(--accent-blue); }
+        .multi-select-trigger.active { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .multi-select-trigger svg { width: 18px; height: 18px; transition: transform 0.2s ease; }
+        .multi-select-trigger.active svg { transform: rotate(180deg); }
+        .multi-select-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; margin-top: 4px; max-height: 250px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); }
+        .multi-select-dropdown.open { display: block; }
+        .multi-select-search { padding: 10px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; background: var(--bg-card); }
+        .multi-select-search input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; font-family: 'DM Sans', sans-serif; }
+        .multi-select-search input:focus { outline: none; border-color: var(--accent-blue); }
+        .multi-select-option { padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s ease; }
+        .multi-select-option:hover { background: var(--bg-input); }
+        .multi-select-option.selected { background: rgba(37, 99, 235, 0.08); }
+        .multi-select-option input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-blue); }
+        .multi-select-option label { flex: 1; cursor: pointer; font-size: 0.9rem; }
+        .selected-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .selected-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.75rem; color: var(--text-secondary); }
+        .selected-tag.hardware { background: rgba(217, 119, 6, 0.1); border-color: rgba(217, 119, 6, 0.3); color: var(--accent-orange); }
+        .selected-tag.software { background: rgba(124, 58, 237, 0.1); border-color: rgba(124, 58, 237, 0.3); color: var(--accent-purple); }
+        .selected-tag.training { background: rgba(5, 150, 105, 0.1); border-color: rgba(5, 150, 105, 0.3); color: var(--accent-green); }
+        .selected-tag.accreditation { background: rgba(8, 145, 178, 0.1); border-color: rgba(8, 145, 178, 0.3); color: var(--accent-cyan); }
+        .selected-tag .remove-tag { cursor: pointer; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(0,0,0,0.1); font-size: 10px; }
+        .selected-tag .remove-tag:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        select { width: 100%; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-primary); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; cursor: pointer; }
+        select:hover { border-color: var(--accent-blue); }
+        select:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .min-rating-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px; background: var(--bg-input); border-radius: 8px; }
+        .min-rating-row label { font-size: 0.85rem; color: var(--text-secondary); }
+        .min-rating-row select { width: auto; padding: 6px 12px; font-size: 0.85rem; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+        .btn-primary { width: 100%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); color: white; margin-top: 8px; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3); }
+        .btn-secondary { width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); margin-top: 12px; }
+        .btn-secondary:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+        .results-panel { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px; min-height: 500px; }
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        .results-header h2 { font-size: 1.25rem; font-weight: 600; }
+        .results-count { background: var(--bg-input); padding: 6px 14px; border-radius: 20px; font-size: 0.875rem; color: var(--text-secondary); }
+        .results-count span { color: var(--accent-cyan); font-weight: 600; }
+        .employee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .employee-card { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; transition: all 0.2s ease; }
+        .employee-card:hover { border-color: var(--accent-blue); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+        .employee-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+        .employee-role { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px; }
+        .employee-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+        .meta-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-muted); }
+        .meta-icon { width: 16px; height: 16px; opacity: 0.7; }
+        .employee-skills { display: flex; flex-wrap: wrap; gap: 6px; }
+        .skill-tag { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; }
+        .skill-tag.hardware { background: rgba(217, 119, 6, 0.1); color: var(--accent-orange); border: 1px solid rgba(217, 119, 6, 0.3); }
+        .skill-tag.software { background: rgba(124, 58, 237, 0.1); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.3); }
+        .skill-tag.training { background: rgba(5, 150, 105, 0.1); color: var(--accent-green); border: 1px solid rgba(5, 150, 105, 0.3); }
+        .skill-tag.accreditation { background: rgba(8, 145, 178, 0.1); color: var(--accent-cyan); border: 1px solid rgba(8, 145, 178, 0.3); }
+        .rating-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .rating-badge.low { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
+        .rating-badge.medium { background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.3); color: var(--accent-orange); }
+        .rating-badge.high { background: rgba(5, 150, 105, 0.1); border: 1px solid rgba(5, 150, 105, 0.3); color: var(--accent-green); }
+        .match-indicator { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; padding: 6px 10px; background: rgba(5, 150, 105, 0.1); border-radius: 6px; font-size: 0.8rem; color: var(--accent-green); font-weight: 500; }
+        .match-indicator svg { width: 14px; height: 14px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state svg { width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.5; }
+        .empty-state h3 { font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 8px; }
+        .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; }
+        .spinner { width: 48px; height: 48px; border: 3px solid var(--border-color); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { margin-top: 16px; color: var(--text-secondary); }
+        .active-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .active-filter-tag { padding: 6px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 20px; font-size: 0.8rem; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>SKILLS MATRIX</h1>
+            <p>Find the right technician for the job</p>
+            <div class="connection-status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Loading data...</span>
+            </div>
+        </header>
+        <main class="main-layout">
+            <aside class="filter-panel">
+                <h2>Filter Technicians</h2>
+                <div class="filter-section">
+                    <label class="filter-label">Workstream</label>
+                    <select id="workstreamSelect">
+                        <option value="">-- Select workstream --</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Job Type</label>
+                    <select id="jobTypeSelect" disabled>
+                        <option value="">-- Select workstream first --</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Company (optional)</label>
+                    <select id="companySelect">
+                        <option value="">None</option>
+                        <option value="ThamesWater">Thames Water</option>
+                        <option value="ScottishWater">Scottish Water</option>
+                        <option value="AnglianWater">Anglian Water</option>
+                    </select>
+                </div>
+                <div style="border-bottom: 2px dashed var(--border-color); margin: 24px 0;"></div>
+                <div class="filter-section">
+                    <label class="filter-label">Department</label>
+                    <select id="departmentSelect">
+                        <option value="">All Departments</option>
+                        <option value="Clean">Clean</option>
+                        <option value="Waste">Waste</option>
+                        <option value="Projects">Projects</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Training / Competency <span class="count" id="trainingCount" style="display: none;">0</span></label>
+                    <div class="multi-select" id="trainingMultiSelect">
+                        <div class="multi-select-trigger" id="trainingTrigger">
+                            <span>Select trainings...</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="multi-select-dropdown" id="trainingDropdown">
+                            <div class="multi-select-search"><input type="text" placeholder="Search trainings..." id="trainingSearch"></div>
+                            <div id="trainingOptions"></div>
+                        </div>
+                    </div>
+                    <div class="min-rating-row">
+                        <label>Minimum rating:</label>
+                        <select id="minTrainingRating">
+                            <option value="1">≥ 1/5</option>
+                            <option value="2">≥ 2/5</option>
+                            <option value="3" selected>≥ 3/5</option>
+                            <option value="4">≥ 4/5</option>
+                            <option value="5">5/5 only</option>
+                        </select>
+                    </div>
+                    <div class="selected-tags" id="selectedTrainings"></div>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Hardware <span class="count" id="hardwareCount" style="display: none;">0</span></label>
+                    <div class="multi-select" id="hardwareMultiSelect">
+                        <div class="multi-select-trigger" id="hardwareTrigger">
+                            <span>Select hardware...</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="multi-select-dropdown" id="hardwareDropdown">
+                            <div class="multi-select-search"><input type="text" placeholder="Search hardware..." id="hardwareSearch"></div>
+                            <div id="hardwareOptions"></div>
+                        </div>
+                    </div>
+                    <div class="selected-tags" id="selectedHardware"></div>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Software <span class="count" id="softwareCount" style="display: none;">0</span></label>
+                    <div class="multi-select" id="softwareMultiSelect">
+                        <div class="multi-select-trigger" id="softwareTrigger">
+                            <span>Select software...</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="multi-select-dropdown" id="softwareDropdown">
+                            <div class="multi-select-search"><input type="text" placeholder="Search software..." id="softwareSearch"></div>
+                            <div id="softwareOptions"></div>
+                        </div>
+                    </div>
+                    <div class="selected-tags" id="selectedSoftware"></div>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Accreditations <span class="count" id="accreditationCount" style="display: none;">0</span></label>
+                    <div class="multi-select" id="accreditationMultiSelect">
+                        <div class="multi-select-trigger" id="accreditationTrigger">
+                            <span>Select accreditations...</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="multi-select-dropdown" id="accreditationDropdown">
+                            <div class="multi-select-search"><input type="text" placeholder="Search accreditations..." id="accreditationSearch"></div>
+                            <div id="accreditationOptions"></div>
+                        </div>
+                    </div>
+                    <div class="selected-tags" id="selectedAccreditations"></div>
+                </div>
+                <button class="btn btn-primary" id="searchBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                    Search
+                </button>
+                <button class="btn btn-secondary" id="clearBtn">Clear All Filters</button>
+            </aside>
+            <section class="results-panel">
+                <div class="results-header">
+                    <h2>Results</h2>
+                    <div class="results-count">Found <span id="resultCount">0</span> technicians</div>
+                </div>
+                <div class="active-filters" id="activeFilters"></div>
+                <div id="resultsContainer">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                        <h3>Search for technicians</h3>
+                        <p>Use the filters on the left to find the right person for the job</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script>
+        const CONFIG = {
+            siteUrl: 'https://morrisonus.sharepoint.com/sites/SkillsMatrix',
+            listName: 'Employees'
+        };
+
+        const TRAINING_COLUMNS = [
+            '[T1] ABB Magmaster Verification', '[T2] ABB Watermaster Verification', '[T3] Siemens Full-bore Verification',
+            '[T4] Fischer Porter Verification', '[T5] Khrone Verification', '[T6] ABB Process Master Verification',
+            '[T7] Siemens LUT (400 series) Verification', '[T8] Siemens Hydroranger Verification', '[T9] Milltronics Verification',
+            '[T10] Pulsar Verification', '[T11] Vega Verification', '[T12] Warren Jones Verification',
+            '[T13] Flexim Ultrasonic', '[T14] Siemens Ultrasonic', '[T15] GE Panametrics', '[T16] Katronic',
+            '[T17] Nivus (Area Velocity) Verification', '[T18] Teledyne Isco Laser Flow Verification', '[T19] GWF Verification',
+            '[T20] Fujitsu Siemens', '[T21] Insertion Probe', '[T22] ABB Aquamaster', '[T23] Siemens Battery Powered',
+            '[T24] Nivus (Open Channel) Verification', '[T25] Synapsis Ultrasonic'
+        ];
+
+        const HARDWARE_OPTIONS = [
+            '[H1] SRV500', '[H2] Current simulator', '[H3] Megger', '[H4] Moving coil meter', '[H5] DVM (digital volt meter)',
+            '[H6] Laptop', '[H7] Martindale proving unit', '[H8] Lock off kit (with key)', '[H9] Siemens Verificator',
+            '[H10] F&P simulator', '[H11] Khrone MagCheck', '[H13] Loop simulator', '[H14] Micro USB cable',
+            '[H15] Reference plate', '[H16] Bracket', '[H17] Clamp', '[H18] Steel ruler', '[H19] Flow calculator',
+            '[H20] Hand terminal / HART', '[H21] USB drive (not encrypted)', '[H22] Low pressure druck', '[H23] ID Tool',
+            '[H24] Various Reducers', '[H25] PTFE', '[H26] Chlorus', '[H27] Screwdriver', '[H28] IR Reader & Dongle',
+            '[H29] Micro USB Cable', '[H30] Tape', '[H31] Compact Flashcard', '[H32] OD Tape', '[H33] Generic Tools',
+            '[H34] Gas Monitor', '[H35] AQ4 - NFC Reader'
+        ];
+
+        const SOFTWARE_OPTIONS = [
+            '[S1] SRV500 software', '[S2] Cal1/Hyperterminal', '[S3] (Z-One)', '[S4] Verimaster', '[S5] MagFlo 5.1',
+            '[S6] Conversion document (Excel)', '[S7] Asset Vision Basic', '[S8] Siemens - Sitrans LUT400 (Server)',
+            '[S9] Dolphin software', '[S10] Vega Tools', '[S11] FluxDiag', '[S12] PanaView', '[S13] Kat View TBC',
+            '[S14] NivuFlow', '[S15] External (RSHydro)', '[S16] Calculator', '[S17] Utils', '[S18] Logmaster',
+            '[S19] AQ4 App', '[S20] Flow tool/IDM', '[S21] River Surveyor Software (Xylem boat hired from Xylem)'
+        ];
+
+        const ACCREDITATION_OPTIONS = [
+            '[A1] SRV500 training', '[A2] EUSR SHEA', '[A3] EUSR', '[A4] Safe Isolation & Proving Dead',
+            '[A5] Emergency First Aid at Work', '[A6] NRSWA - Signing, Lighting & Guarding',
+            '[A7] 6160-09 Level 2 Award in Medium Risk', '[A8] Anglian Water Health and Safety Induction 2023/2024',
+            '[A9] Thames Water Health & Safety Passport', '[A10] EUSR DOMS', '[A11] EUSR National Water Hygiene',
+            '[A12] Anglian Water Health and Safety Induction', '[A13] Disinfection Procedure Compliance',
+            '[A14] Procedural Knowledge', '[A15] Nivus Portable Knowledge', '[A16] Understanding Pipe Recognition',
+            '[A17] Z472- ABB Ability SRV500 Verification', '[A18] Competency Cloud Demonstration for Supervisors and Line Managers',
+            '[A19] Company Induction', '[A20] An Introduction to Leadership (MGS E-Learning)',
+            '[A21] Business Ethics & Information Security Briefing for Operational Workers', '[A22] Confined Spaces: Medium Risk',
+            '[A23] First Aid at Work: Emergency (1 day)', '[A24] Internal Drug & Alcohol Tester', '[A25] Thames Water - PPTW',
+            '[A26] Manual Handling Awareness (MGS E-Learning)', '[A27] Asbestos Awareness (MGS E-Learning)',
+            '[A28] NRSWA: O1 - Signing, lighting and guarding', '[A29] Ladder Safety (MGS E-Learning)',
+            '[A30] Ladder Association: Ladders & Stepladders Inspection', '[A31] Ladder Association: Ladders & Stepladders for Users',
+            '[A32] Site Supervisor Safety Training Scheme (SSSTS)', '[A33] Effective Communication Skills',
+            '[A34] NVQ L2: Electrotechnical Technology - Installation', '[A35] Abrasive Wheels',
+            '[A36] Level 3 Award in the Requirements for Electrical', "[A37] Energy Safe Victoria: Electrician's Licence",
+            '[A38] Inclusion and Diversity (MGS E-Learning)', '[A39] Financial Crime (M Group E-Learning)',
+            '[A40] Modern Slavery (MGS E-Learning)', '[A41] D&A Test Evidence', '[A42] Water Quality - Third Party (Thames Water)',
+            '[A43] Business Expenses (MGS E-Learning)', '[A44] DBS Check', '[A45] Health, Safety and Environment Test for Operatives',
+            '[A46] Site Management Safety Training Scheme (SMSTS)'
+        ];
+
+        let allEmployees = [];
+        let allPresets = [];
+        let selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [] };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initMultiSelects();
+            attachEventListeners();
+            fetchEmployees();
+            fetchPresets();
+        });
+
+        function initMultiSelects() {
+            const containers = {
+                training: { options: TRAINING_COLUMNS, container: 'trainingOptions' },
+                hardware: { options: HARDWARE_OPTIONS, container: 'hardwareOptions' },
+                software: { options: SOFTWARE_OPTIONS, container: 'softwareOptions' },
+                accreditation: { options: ACCREDITATION_OPTIONS, container: 'accreditationOptions' }
+            };
+            for (const [type, data] of Object.entries(containers)) {
+                const container = document.getElementById(data.container);
+                data.options.forEach(opt => {
+                    const id = `${type}-${opt.replace(/[^a-zA-Z0-9]/g, '')}`;
+                    container.innerHTML += `<div class="multi-select-option" data-value="${opt}" data-type="${type}"><input type="checkbox" id="${id}"><label for="${id}">${opt}</label></div>`;
+                });
+            }
+        }
+
+        function attachEventListeners() {
+            document.getElementById('searchBtn').addEventListener('click', performSearch);
+            document.getElementById('clearBtn').addEventListener('click', clearAllFilters);
+            document.getElementById('departmentSelect').addEventListener('change', (e) => { selectedFilters.department = e.target.value; });
+            document.getElementById('workstreamSelect').addEventListener('change', onWorkstreamChange);
+            document.getElementById('jobTypeSelect').addEventListener('change', onJobTypeChange);
+            document.getElementById('companySelect').addEventListener('change', onCompanyChange);
+            setupMultiSelect('training', 'trainings');
+            setupMultiSelect('hardware', 'hardware');
+            setupMultiSelect('software', 'software');
+            setupMultiSelect('accreditation', 'accreditations');
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.multi-select')) {
+                    document.querySelectorAll('.multi-select-dropdown').forEach(d => d.classList.remove('open'));
+                    document.querySelectorAll('.multi-select-trigger').forEach(t => t.classList.remove('active'));
+                }
+            });
+            document.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.target.closest('.multi-select-search')) performSearch(); });
+        }
+
+        function setupMultiSelect(type, filterKey) {
+            const trigger = document.getElementById(`${type}Trigger`);
+            const dropdown = document.getElementById(`${type}Dropdown`);
+            const searchInput = document.getElementById(`${type}Search`);
+            const optionsContainer = document.getElementById(`${type}Options`);
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = dropdown.classList.contains('open');
+                document.querySelectorAll('.multi-select-dropdown').forEach(d => d.classList.remove('open'));
+                document.querySelectorAll('.multi-select-trigger').forEach(t => t.classList.remove('active'));
+                if (!isOpen) { dropdown.classList.add('open'); trigger.classList.add('active'); searchInput.focus(); }
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                optionsContainer.querySelectorAll('.multi-select-option').forEach(option => {
+                    option.style.display = option.dataset.value.toLowerCase().includes(query) ? '' : 'none';
+                });
+            });
+
+            optionsContainer.addEventListener('click', (e) => {
+                const option = e.target.closest('.multi-select-option');
+                if (!option) return;
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                const value = option.dataset.value;
+                if (e.target !== checkbox) checkbox.checked = !checkbox.checked;
+                if (checkbox.checked) {
+                    if (!selectedFilters[filterKey].includes(value)) selectedFilters[filterKey].push(value);
+                    option.classList.add('selected');
+                } else {
+                    selectedFilters[filterKey] = selectedFilters[filterKey].filter(v => v !== value);
+                    option.classList.remove('selected');
+                }
+                updateSelectedTags(type, filterKey);
+            });
+        }
+
+        function updateSelectedTags(type, filterKey) {
+            const containerName = type === 'training' ? 'selectedTrainings' : type === 'accreditation' ? 'selectedAccreditations' : `selected${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            const container = document.getElementById(containerName);
+            const countEl = document.getElementById(`${type}Count`);
+            const selected = selectedFilters[filterKey];
+            if (selected.length > 0) {
+                countEl.textContent = selected.length; countEl.style.display = '';
+                container.innerHTML = selected.map(value => `<span class="selected-tag ${type}" data-value="${value}">${value.length > 30 ? value.substring(0, 30) + '...' : value}<span class="remove-tag" onclick="removeFilter('${filterKey}', \`${value.replace(/`/g, '\\`')}\`, '${type}')">×</span></span>`).join('');
+            } else { countEl.style.display = 'none'; container.innerHTML = ''; }
+        }
+
+        function removeFilter(filterKey, value, type) {
+            selectedFilters[filterKey] = selectedFilters[filterKey].filter(v => v !== value);
+            const optionsContainer = document.getElementById(`${type}Options`);
+            const option = optionsContainer.querySelector(`[data-value="${value}"]`);
+            if (option) { option.querySelector('input[type="checkbox"]').checked = false; option.classList.remove('selected'); }
+            updateSelectedTags(type, filterKey);
+        }
+
+        function clearAllFilters() {
+            selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [] };
+            document.getElementById('departmentSelect').value = '';
+            document.getElementById('workstreamSelect').value = '';
+            document.getElementById('jobTypeSelect').value = '';
+            document.getElementById('jobTypeSelect').disabled = true;
+            document.getElementById('jobTypeSelect').innerHTML = '<option value="">-- Select workstream first --</option>';
+            document.getElementById('companySelect').value = '';
+            document.getElementById('minTrainingRating').value = '3';
+            document.querySelectorAll('.multi-select-option').forEach(option => { option.querySelector('input[type="checkbox"]').checked = false; option.classList.remove('selected'); });
+            document.querySelectorAll('.selected-tags').forEach(c => c.innerHTML = '');
+            document.querySelectorAll('.filter-label .count').forEach(c => c.style.display = 'none');
+            document.getElementById('activeFilters').innerHTML = '';
+            showEmptyState();
+        }
+
+        async function fetchPresets() {
+            try {
+                const response = await fetch('./data/presets.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                allPresets = data.map(item => ({
+                    id: item.Id || item.id || Math.random(),
+                    workstream: item.Workstream || item.workstream || '',
+                    jobType: item.JobType || item.jobType || '',
+                    hardware: parseMultiSelect(item.Hardware || item.hardware),
+                    software: parseMultiSelect(item.Software || item.software),
+                    accreditations: parseMultiSelect(item.Accreditations || item.accreditations),
+                    training: parseMultiSelect(item.Training || item.training),
+                    minRating: item.MinRating || item.minRating || '3',
+                    thamesWater: parseMultiSelect(item.ThamesWater || item.thamesWater),
+                    scottishWater: parseMultiSelect(item.ScottishWater || item.scottishWater),
+                    anglianWater: parseMultiSelect(item.AnglianWater || item.anglianWater)
+                }));
+                populateWorkstreams();
+            } catch (error) {
+                console.error('Error fetching presets:', error);
+            }
+        }
+
+        function populateWorkstreams() {
+            const workstreamSelect = document.getElementById('workstreamSelect');
+            const workstreams = [...new Set(allPresets.map(p => p.workstream).filter(w => w))];
+            workstreams.sort();
+            workstreams.forEach(ws => {
+                const option = document.createElement('option');
+                option.value = ws;
+                option.textContent = ws;
+                workstreamSelect.appendChild(option);
+            });
+        }
+
+        function onWorkstreamChange() {
+            const workstream = document.getElementById('workstreamSelect').value;
+            const jobTypeSelect = document.getElementById('jobTypeSelect');
+            jobTypeSelect.innerHTML = '<option value="">-- Select job type --</option>';
+            
+            if (!workstream) {
+                jobTypeSelect.disabled = true;
+                jobTypeSelect.innerHTML = '<option value="">-- Select workstream first --</option>';
+                return;
+            }
+
+            const jobTypes = allPresets.filter(p => p.workstream === workstream).map(p => p.jobType).filter(j => j);
+            jobTypes.sort();
+            jobTypes.forEach(jt => {
+                const option = document.createElement('option');
+                option.value = jt;
+                option.textContent = jt;
+                jobTypeSelect.appendChild(option);
+            });
+            jobTypeSelect.disabled = false;
+        }
+
+        function onJobTypeChange() {
+            const workstream = document.getElementById('workstreamSelect').value;
+            const jobType = document.getElementById('jobTypeSelect').value;
+            if (!workstream || !jobType) return;
+
+            const preset = allPresets.find(p => p.workstream === workstream && p.jobType === jobType);
+            if (!preset) return;
+
+            applyPresetToFilters(preset);
+        }
+
+        function onCompanyChange() {
+            const workstream = document.getElementById('workstreamSelect').value;
+            const jobType = document.getElementById('jobTypeSelect').value;
+            if (!workstream || !jobType) return;
+
+            const preset = allPresets.find(p => p.workstream === workstream && p.jobType === jobType);
+            if (!preset) return;
+
+            applyPresetToFilters(preset);
+        }
+
+        function applyPresetToFilters(preset) {
+            // Clear existing selections
+            document.querySelectorAll('.multi-select-option').forEach(option => { 
+                option.querySelector('input[type="checkbox"]').checked = false; 
+                option.classList.remove('selected'); 
+            });
+            selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [] };
+
+            // Set min rating
+            if (preset.minRating) document.getElementById('minTrainingRating').value = preset.minRating;
+
+            // Apply trainings
+            preset.training.forEach(t => {
+                if (!selectedFilters.trainings.includes(t)) selectedFilters.trainings.push(t);
+                const option = document.querySelector('#trainingOptions').querySelector(`[data-value="${CSS.escape(t)}"]`) 
+                    || Array.from(document.querySelectorAll('#trainingOptions .multi-select-option')).find(el => el.dataset.value === t);
+                if (option) { option.querySelector('input[type="checkbox"]').checked = true; option.classList.add('selected'); }
+            });
+            updateSelectedTags('training', 'trainings');
+
+            // Apply hardware
+            preset.hardware.forEach(h => {
+                if (!selectedFilters.hardware.includes(h)) selectedFilters.hardware.push(h);
+                const option = Array.from(document.querySelectorAll('#hardwareOptions .multi-select-option')).find(el => el.dataset.value === h);
+                if (option) { option.querySelector('input[type="checkbox"]').checked = true; option.classList.add('selected'); }
+            });
+            updateSelectedTags('hardware', 'hardware');
+
+            // Apply software
+            preset.software.forEach(s => {
+                if (!selectedFilters.software.includes(s)) selectedFilters.software.push(s);
+                const option = Array.from(document.querySelectorAll('#softwareOptions .multi-select-option')).find(el => el.dataset.value === s);
+                if (option) { option.querySelector('input[type="checkbox"]').checked = true; option.classList.add('selected'); }
+            });
+            updateSelectedTags('software', 'software');
+
+            // Apply base accreditations
+            preset.accreditations.forEach(a => {
+                if (!selectedFilters.accreditations.includes(a)) selectedFilters.accreditations.push(a);
+                const option = Array.from(document.querySelectorAll('#accreditationOptions .multi-select-option')).find(el => el.dataset.value === a);
+                if (option) { option.querySelector('input[type="checkbox"]').checked = true; option.classList.add('selected'); }
+            });
+
+            // Apply company-specific accreditations
+            const company = document.getElementById('companySelect').value;
+            let companyAccreditations = [];
+            if (company === 'ThamesWater') companyAccreditations = preset.thamesWater || [];
+            else if (company === 'ScottishWater') companyAccreditations = preset.scottishWater || [];
+            else if (company === 'AnglianWater') companyAccreditations = preset.anglianWater || [];
+
+            companyAccreditations.forEach(a => {
+                if (!selectedFilters.accreditations.includes(a)) selectedFilters.accreditations.push(a);
+                const option = Array.from(document.querySelectorAll('#accreditationOptions .multi-select-option')).find(el => el.dataset.value === a);
+                if (option) { option.querySelector('input[type="checkbox"]').checked = true; option.classList.add('selected'); }
+            });
+            updateSelectedTags('accreditation', 'accreditations');
+
+            // Run search
+            performSearch();
+        }
+
+        async function fetchEmployees() {
+            showLoading();
+            try {
+                const response = await fetch('./data/employees.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const data = await response.json();
+                allEmployees = data.map(item => ({
+                    id: item.Id || item.id || Math.random(),
+                    name: item.Employee || item.employee || item.Name || item.name || 'Unknown',
+                    email: item.Email || item.email || '',
+                    role: item.Role || item.role || '',
+                    department: item.Department || item.department || '',
+                    manager: item.Manager || item.manager || '',
+                    hardware: parseMultiSelect(item.Hardware || item.hardware),
+                    software: parseMultiSelect(item.Software || item.software),
+                    accreditations: parseMultiSelect(item.Accreditations || item.accreditations),
+                    trainings: parseTrainings(item)
+                }));
+                updateConnectionStatus(true);
+                showEmptyState();
+            } catch (error) {
+                console.error('Error fetching employees:', error);
+                updateConnectionStatus(false, error.message);
+                showError(error.message);
+            }
+        }
+
+        function parseTrainings(item) {
+            const trainings = {};
+            TRAINING_COLUMNS.forEach(training => {
+                const value = item[training];
+                if (value && value !== 'N/A' && value !== '') {
+                    trainings[training] = value;
+                }
+            });
+            return trainings;
+        }
+
+        function parseMultiSelect(value) {
+            if (!value) return [];
+            if (Array.isArray(value)) return value;
+            if (typeof value === 'string') return value.split(';#').filter(v => v.trim());
+            return [];
+        }
+
+        function parseRating(ratingStr) {
+            if (!ratingStr || ratingStr === 'N/A') return 0;
+            const match = ratingStr.match(/^(\d)\/5$/);
+            return match ? parseInt(match[1]) : 0;
+        }
+
+        function performSearch() {
+            const minRating = parseInt(document.getElementById('minTrainingRating').value) || 1;
+            let results = allEmployees.filter(emp => {
+                if (selectedFilters.department && emp.department !== selectedFilters.department) return false;
+                for (const training of selectedFilters.trainings) { if (parseRating(emp.trainings[training]) < minRating) return false; }
+                for (const hw of selectedFilters.hardware) { if (!emp.hardware.includes(hw)) return false; }
+                for (const sw of selectedFilters.software) { if (!emp.software.includes(sw)) return false; }
+                for (const acc of selectedFilters.accreditations) { if (!emp.accreditations.includes(acc)) return false; }
+                return true;
+            });
+            displayResults(results);
+            updateActiveFiltersDisplay();
+        }
+
+        function displayResults(employees) {
+            document.getElementById('resultCount').textContent = employees.length;
+            if (employees.length === 0) {
+                document.getElementById('resultsContainer').innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><h3>No technicians found</h3><p>Try removing some filters or lowering the minimum rating</p></div>`;
+                return;
+            }
+            document.getElementById('resultsContainer').innerHTML = `<div class="employee-grid">${employees.map(emp => createEmployeeCard(emp)).join('')}</div>`;
+        }
+
+        function createEmployeeCard(employee) {
+            const matchedTrainings = selectedFilters.trainings.map(t => {
+                const rating = employee.trainings[t]; const ratingNum = parseRating(rating);
+                const ratingClass = ratingNum >= 4 ? 'high' : ratingNum >= 3 ? 'medium' : 'low';
+                const shortName = t.replace(/^\[T\d+\]\s*/, '').substring(0, 30);
+                return `<span class="rating-badge ${ratingClass}">${shortName}: ${rating}</span>`;
+            }).join('');
+            const matchedHardware = selectedFilters.hardware.slice(0, 3).map(hw => `<span class="skill-tag hardware">${hw}</span>`).join('');
+            const matchedSoftware = selectedFilters.software.slice(0, 3).map(sw => `<span class="skill-tag software">${sw}</span>`).join('');
+            const matchedAccreditations = selectedFilters.accreditations.slice(0, 3).map(acc => `<span class="skill-tag accreditation">${acc}</span>`).join('');
+            const totalFilters = selectedFilters.trainings.length + selectedFilters.hardware.length + selectedFilters.software.length + selectedFilters.accreditations.length;
+            return `<div class="employee-card">${totalFilters > 0 ? `<div class="match-indicator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>Matches all ${totalFilters} requirements</div>` : ''}<div class="employee-name">${employee.name}</div><div class="employee-role">${employee.role || 'No role specified'}</div><div class="employee-meta"><div class="meta-item"><svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${employee.department || 'No dept'}</div>${employee.manager ? `<div class="meta-item"><svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>${employee.manager}</div>` : ''}</div><div class="employee-skills">${matchedTrainings}${matchedHardware}${matchedSoftware}${matchedAccreditations}</div></div>`;
+        }
+
+        function updateActiveFiltersDisplay() {
+            const container = document.getElementById('activeFilters'); const tags = [];
+            const minRating = document.getElementById('minTrainingRating').value;
+            if (selectedFilters.department) tags.push(`<span class="active-filter-tag">Dept: ${selectedFilters.department}</span>`);
+            if (selectedFilters.trainings.length > 0) tags.push(`<span class="active-filter-tag">${selectedFilters.trainings.length} training(s) ≥ ${minRating}/5</span>`);
+            if (selectedFilters.hardware.length > 0) tags.push(`<span class="active-filter-tag">${selectedFilters.hardware.length} hardware</span>`);
+            if (selectedFilters.software.length > 0) tags.push(`<span class="active-filter-tag">${selectedFilters.software.length} software</span>`);
+            if (selectedFilters.accreditations.length > 0) tags.push(`<span class="active-filter-tag">${selectedFilters.accreditations.length} accreditation(s)</span>`);
+            container.innerHTML = tags.join('');
+        }
+
+        function showLoading() { document.getElementById('resultsContainer').innerHTML = `<div class="loading"><div class="spinner"></div><p>Loading employees...</p></div>`; }
+        function showEmptyState() { document.getElementById('resultCount').textContent = '0'; document.getElementById('resultsContainer').innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg><h3>Search for technicians</h3><p>Use the filters on the left to find the right person for the job</p></div>`; }
+        function showError(message) { document.getElementById('resultsContainer').innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Load Error</h3><p>${message}</p><p style="margin-top: 12px; font-size: 0.85rem;">Make sure the data files are in the correct location.</p></div>`; }
+        function updateConnectionStatus(connected, errorMsg = '') { document.getElementById('statusDot').className = 'status-dot ' + (connected ? 'connected' : 'error'); document.getElementById('statusText').textContent = connected ? `Loaded • ${allEmployees.length} employees` : `Load failed: ${errorMsg}`; }
+    </script>
+</body>
+</html>
