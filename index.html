@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skills Matrix | Find Your Tech</title>
     <link rel="icon" type="image/x-icon" href="https://mgroupltd.com/favicon.ico">
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
@@ -72,6 +73,137 @@
 
         [data-theme="dark"] .theme-toggle .sun-icon { display: block; }
         [data-theme="dark"] .theme-toggle .moon-icon { display: none; }
+
+        /* Login screen */
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .login-screen h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+
+        .login-screen p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 32px;
+        }
+
+        .login-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-orange));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(233, 30, 140, 0.3);
+        }
+
+        .login-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .bypass-btn {
+            margin-top: 20px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s ease;
+        }
+
+        .bypass-btn:hover {
+            color: var(--text-secondary);
+        }
+
+        .user-info {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 6px 16px 6px 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-orange));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            margin-left: 4px;
+            display: flex;
+            align-items: center;
+        }
+
+        .logout-btn:hover {
+            color: var(--accent-pink);
+        }
+
+        .app-content {
+            display: none;
+        }
+
+        .app-content.visible {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .user-info {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 16px;
+                align-self: flex-start;
+            }
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.6; }
         .container { max-width: 1400px; margin: 0 auto; padding: 40px 24px; position: relative; }
@@ -184,7 +316,35 @@
     </style>
 </head>
 <body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <h1>SKILLS MATRIX</h1>
+        <p>Sign in with your M Group account to continue</p>
+        <button class="login-btn" id="loginBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            Sign in with Microsoft
+        </button>
+        <button class="bypass-btn" id="bypassBtn">Continue without login (demo mode)</button>
+    </div>
+
+    <!-- Main App Content -->
+    <div class="app-content" id="appContent">
     <div class="container">
+        <div class="user-info" id="userInfo">
+            <div class="user-avatar" id="userAvatar">?</div>
+            <span id="userName">User</span>
+            <button class="logout-btn" id="logoutBtn" title="Sign out">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+            </button>
+        </div>
         <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
             <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -332,7 +492,34 @@
             </section>
         </main>
     </div>
+    </div>
     <script>
+        // ============================================
+        // MSAL CONFIGURATION
+        // ============================================
+        const msalConfig = {
+            auth: {
+                clientId: '85f768c8-fce1-4cd6-ba78-76892d0c849e',
+                authority: 'https://login.microsoftonline.com/ac8516b7-b864-4061-b563-3f0542e6780d',
+                redirectUri: window.location.origin + window.location.pathname,
+            },
+            cache: {
+                cacheLocation: 'localStorage',
+                storeAuthStateInCookie: false,
+            }
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+        const loginRequest = {
+            scopes: ['https://graph.microsoft.com/Sites.Read.All']
+        };
+
+        let accessToken = null;
+
+        // ============================================
+        // SHAREPOINT CONFIGURATION
+        // ============================================
         const CONFIG = {
             siteUrl: 'https://morrisonus.sharepoint.com/sites/SkillsMatrix',
             listName: 'Employees'
@@ -395,13 +582,182 @@
         let allPresets = [];
         let selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [] };
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             initTheme();
+            
+            // Handle redirect after login
+            try {
+                const response = await msalInstance.handleRedirectPromise();
+                if (response) {
+                    accessToken = response.accessToken;
+                    showApp(response.account);
+                } else {
+                    // Check if user is already signed in
+                    const accounts = msalInstance.getAllAccounts();
+                    if (accounts.length > 0) {
+                        try {
+                            const silentResponse = await msalInstance.acquireTokenSilent({
+                                ...loginRequest,
+                                account: accounts[0]
+                            });
+                            accessToken = silentResponse.accessToken;
+                            showApp(accounts[0]);
+                        } catch (e) {
+                            showLogin();
+                        }
+                    } else {
+                        showLogin();
+                    }
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                showLogin();
+            }
+
+            // Login button
+            document.getElementById('loginBtn').addEventListener('click', login);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('bypassBtn').addEventListener('click', enterDemoMode);
+        });
+
+        let demoMode = false;
+
+        function enterDemoMode() {
+            demoMode = true;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContent').classList.add('visible');
+            
+            // Show demo user info
+            document.getElementById('userName').textContent = 'Demo User';
+            document.getElementById('userAvatar').textContent = 'DU';
+            
+            // Initialize app with JSON data
+            initMultiSelects();
+            attachEventListeners();
+            fetchEmployeesDemo();
+            fetchPresetsDemo();
+        }
+
+        async function fetchEmployeesDemo() {
+            showLoading();
+            try {
+                const response = await fetch('./data/employees.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const data = await response.json();
+                allEmployees = data.map(item => ({
+                    id: item.Id || item.id || Math.random(),
+                    name: item.Employee || item.employee || item.Name || item.name || 'Unknown',
+                    email: item.Email || item.email || '',
+                    role: item.Role || item.role || '',
+                    department: item.Department || item.department || '',
+                    manager: item.Manager || item.manager || '',
+                    hardware: parseMultiSelect(item.Hardware || item.hardware),
+                    software: parseMultiSelect(item.Software || item.software),
+                    accreditations: parseMultiSelect(item.Accreditations || item.accreditations),
+                    trainings: parseTrainingsDemo(item)
+                }));
+                updateConnectionStatus(true);
+                showEmptyState();
+            } catch (error) {
+                console.error('Error fetching employees:', error);
+                updateConnectionStatus(false, error.message);
+                showError(error.message);
+            }
+        }
+
+        function parseTrainingsDemo(item) {
+            const trainings = {};
+            TRAINING_COLUMNS.forEach(training => {
+                const value = item[training];
+                if (value && value !== 'N/A' && value !== '') {
+                    trainings[training] = value;
+                }
+            });
+            return trainings;
+        }
+
+        async function fetchPresetsDemo() {
+            try {
+                const response = await fetch('./data/presets.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                allPresets = data.map(item => ({
+                    id: item.Id || item.id || Math.random(),
+                    workstream: item.Workstream || item.workstream || '',
+                    jobType: item.JobType || item.jobType || '',
+                    hardware: parseMultiSelect(item.Hardware || item.hardware),
+                    software: parseMultiSelect(item.Software || item.software),
+                    accreditations: parseMultiSelect(item.Accreditations || item.accreditations),
+                    training: parseMultiSelect(item.Training || item.training),
+                    minRating: item.MinRating || item.minRating || '3',
+                    thamesWater: parseMultiSelect(item.ThamesWater || item.thamesWater),
+                    scottishWater: parseMultiSelect(item.ScottishWater || item.scottishWater),
+                    anglianWater: parseMultiSelect(item.AnglianWater || item.anglianWater)
+                }));
+                populateWorkstreams();
+            } catch (error) {
+                console.error('Error fetching presets:', error);
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('appContent').classList.remove('visible');
+        }
+
+        function showApp(account) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContent').classList.add('visible');
+            
+            // Show user info
+            const name = account.name || account.username;
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userAvatar').textContent = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            // Initialize app
             initMultiSelects();
             attachEventListeners();
             fetchEmployees();
             fetchPresets();
-        });
+        }
+
+        async function login() {
+            try {
+                await msalInstance.loginRedirect(loginRequest);
+            } catch (error) {
+                console.error('Login error:', error);
+            }
+        }
+
+        async function logout() {
+            try {
+                await msalInstance.logoutRedirect({
+                    postLogoutRedirectUri: window.location.origin + window.location.pathname
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        async function getAccessToken() {
+            if (accessToken) return accessToken;
+            
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                try {
+                    const response = await msalInstance.acquireTokenSilent({
+                        ...loginRequest,
+                        account: accounts[0]
+                    });
+                    accessToken = response.accessToken;
+                    return accessToken;
+                } catch (e) {
+                    // Token expired, need to login again
+                    await msalInstance.loginRedirect(loginRequest);
+                }
+            }
+            return null;
+        }
 
         function initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -532,22 +888,46 @@
 
         async function fetchPresets() {
             try {
-                const response = await fetch('./data/presets.json');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                allPresets = data.map(item => ({
-                    id: item.Id || item.id || Math.random(),
-                    workstream: item.Workstream || item.workstream || '',
-                    jobType: item.JobType || item.jobType || '',
-                    hardware: parseMultiSelect(item.Hardware || item.hardware),
-                    software: parseMultiSelect(item.Software || item.software),
-                    accreditations: parseMultiSelect(item.Accreditations || item.accreditations),
-                    training: parseMultiSelect(item.Training || item.training),
-                    minRating: item.MinRating || item.minRating || '3',
-                    thamesWater: parseMultiSelect(item.ThamesWater || item.thamesWater),
-                    scottishWater: parseMultiSelect(item.ScottishWater || item.scottishWater),
-                    anglianWater: parseMultiSelect(item.AnglianWater || item.anglianWater)
-                }));
+                const token = await getAccessToken();
+                if (!token) throw new Error('Not authenticated');
+
+                // First get the site ID
+                const siteResponse = await fetch(
+                    `https://graph.microsoft.com/v1.0/sites/morrisonus.sharepoint.com:/sites/SkillsMatrix`,
+                    {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }
+                );
+                if (!siteResponse.ok) throw new Error(`Site error: ${siteResponse.status}`);
+                const siteData = await siteResponse.json();
+                const siteId = siteData.id;
+
+                // Get the presets list
+                const listResponse = await fetch(
+                    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/Presets/items?expand=fields&$top=500`,
+                    {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }
+                );
+                if (!listResponse.ok) throw new Error(`Presets list error: ${listResponse.status}`);
+                const listData = await listResponse.json();
+
+                allPresets = listData.value.map(item => {
+                    const fields = item.fields;
+                    return {
+                        id: item.id,
+                        workstream: fields.Workstream || '',
+                        jobType: fields.JobType || '',
+                        hardware: parseMultiSelect(fields.Hardware),
+                        software: parseMultiSelect(fields.Software),
+                        accreditations: parseMultiSelect(fields.Accreditations),
+                        training: parseMultiSelect(fields.Training),
+                        minRating: fields.MinRating || '3',
+                        thamesWater: parseMultiSelect(fields.ThamesWater),
+                        scottishWater: parseMultiSelect(fields.ScottishWater),
+                        anglianWater: parseMultiSelect(fields.AnglianWater)
+                    };
+                });
                 populateWorkstreams();
             } catch (error) {
                 console.error('Error fetching presets:', error);
@@ -674,21 +1054,46 @@
         async function fetchEmployees() {
             showLoading();
             try {
-                const response = await fetch('./data/employees.json');
-                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                const data = await response.json();
-                allEmployees = data.map(item => ({
-                    id: item.Id || item.id || Math.random(),
-                    name: item.Employee || item.employee || item.Name || item.name || 'Unknown',
-                    email: item.Email || item.email || '',
-                    role: item.Role || item.role || '',
-                    department: item.Department || item.department || '',
-                    manager: item.Manager || item.manager || '',
-                    hardware: parseMultiSelect(item.Hardware || item.hardware),
-                    software: parseMultiSelect(item.Software || item.software),
-                    accreditations: parseMultiSelect(item.Accreditations || item.accreditations),
-                    trainings: parseTrainings(item)
-                }));
+                const token = await getAccessToken();
+                if (!token) throw new Error('Not authenticated');
+
+                // First get the site ID
+                const siteResponse = await fetch(
+                    `https://graph.microsoft.com/v1.0/sites/morrisonus.sharepoint.com:/sites/SkillsMatrix`,
+                    {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }
+                );
+                if (!siteResponse.ok) throw new Error(`Site error: ${siteResponse.status}`);
+                const siteData = await siteResponse.json();
+                const siteId = siteData.id;
+
+                // Get the list
+                const listResponse = await fetch(
+                    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/Employees/items?expand=fields&$top=500`,
+                    {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }
+                );
+                if (!listResponse.ok) throw new Error(`List error: ${listResponse.status}`);
+                const listData = await listResponse.json();
+
+                allEmployees = listData.value.map(item => {
+                    const fields = item.fields;
+                    return {
+                        id: item.id,
+                        name: fields.Employee || fields.Title || 'Unknown',
+                        email: fields.Email || '',
+                        role: fields.Role || '',
+                        department: fields.Department || '',
+                        manager: fields.Manager || '',
+                        hardware: parseMultiSelect(fields.Hardware),
+                        software: parseMultiSelect(fields.Software),
+                        accreditations: parseMultiSelect(fields.Accreditations),
+                        trainings: parseTrainingsFromFields(fields)
+                    };
+                });
+
                 updateConnectionStatus(true);
                 showEmptyState();
             } catch (error) {
@@ -698,10 +1103,11 @@
             }
         }
 
-        function parseTrainings(item) {
+        function parseTrainingsFromFields(fields) {
             const trainings = {};
             TRAINING_COLUMNS.forEach(training => {
-                const value = item[training];
+                // Try different possible field name formats
+                const value = fields[training] || fields[training.replace(/[\[\]]/g, '')] || fields[training.replace(/\s/g, '_x0020_')];
                 if (value && value !== 'N/A' && value !== '') {
                     trainings[training] = value;
                 }
