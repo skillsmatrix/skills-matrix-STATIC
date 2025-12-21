@@ -274,6 +274,12 @@
         .min-rating-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px; background: var(--bg-input); border-radius: 8px; }
         .min-rating-row label { font-size: 0.85rem; color: var(--text-secondary); }
         .min-rating-row select { width: auto; padding: 6px 12px; font-size: 0.85rem; }
+        .location-input { width: 100%; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-primary); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; transition: all 0.2s ease; }
+        .location-input:hover { border-color: var(--accent-pink); }
+        .location-input:focus { outline: none; border-color: var(--accent-pink); box-shadow: 0 0 0 3px rgba(233, 30, 140, 0.1); }
+        .location-input::placeholder { color: var(--text-muted); }
+        .distance-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: rgba(233, 30, 140, 0.1); border: 1px solid rgba(233, 30, 140, 0.3); border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: var(--accent-pink); margin-bottom: 12px; }
+        .distance-badge svg { width: 14px; height: 14px; }
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
         .btn-primary { width: 100%; background: linear-gradient(135deg, var(--accent-pink), var(--accent-orange)); color: white; margin-top: 8px; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(233, 30, 140, 0.3); }
@@ -403,6 +409,10 @@
                         <option value="Waste">Waste</option>
                         <option value="Projects">Projects</option>
                     </select>
+                </div>
+                <div class="filter-section">
+                    <label class="filter-label">Job Location</label>
+                    <input type="text" id="jobLocationInput" class="location-input" placeholder="Enter postcode or town (e.g., CB11, Reading)">
                 </div>
                 <div class="filter-section">
                     <label class="filter-label">Training / Competency <span class="count" id="trainingCount" style="display: none;">0</span></label>
@@ -580,7 +590,9 @@
 
         let allEmployees = [];
         let allPresets = [];
-        let selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [] };
+        let selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [], jobLocation: '' };
+        let employeeCoordinates = {};
+        let jobCoordinates = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             initTheme();
@@ -651,6 +663,7 @@
                     role: item.Role || item.role || '',
                     department: item.Department || item.department || '',
                     manager: item.Manager || item.manager || '',
+                    postcode: item.Postcode || item.postcode || 'N/A',
                     hardware: parseMultiSelect(item.Hardware || item.hardware),
                     software: parseMultiSelect(item.Software || item.software),
                     accreditations: parseMultiSelect(item.Accreditations || item.accreditations),
@@ -777,6 +790,131 @@
             document.querySelector('.toggle-text').textContent = theme === 'dark' ? 'Light' : 'Dark';
         }
 
+        // ============================================
+        // POSTCODE / LOCATION FUNCTIONS
+        // ============================================
+        async function getCoordinatesFromLocation(location) {
+            if (!location || location === 'N/A') return null;
+            
+            // Clean up the input
+            const cleanLocation = location.trim().toUpperCase();
+            
+            // Try as postcode first
+            try {
+                const postcodeResponse = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(cleanLocation)}`);
+                if (postcodeResponse.ok) {
+                    const data = await postcodeResponse.json();
+                    if (data.result) {
+                        return { lat: data.result.latitude, lng: data.result.longitude };
+                    }
+                }
+            } catch (e) {}
+            
+            // Try as partial/outcode postcode
+            try {
+                const outcodeResponse = await fetch(`https://api.postcodes.io/outcodes/${encodeURIComponent(cleanLocation)}`);
+                if (outcodeResponse.ok) {
+                    const data = await outcodeResponse.json();
+                    if (data.result) {
+                        return { lat: data.result.latitude, lng: data.result.longitude };
+                    }
+                }
+            } catch (e) {}
+            
+            // Try as place name
+            try {
+                const placeResponse = await fetch(`https://api.postcodes.io/places?q=${encodeURIComponent(location)}&limit=1`);
+                if (placeResponse.ok) {
+                    const data = await placeResponse.json();
+                    if (data.result && data.result.length > 0) {
+                        return { lat: data.result[0].latitude, lng: data.result[0].longitude };
+                    }
+                }
+            } catch (e) {}
+            
+            return null;
+        }
+
+        async function getCoordinatesForOutcode(outcode) {
+            if (!outcode || outcode === 'N/A') return null;
+            
+            const cleanOutcode = outcode.trim().toUpperCase();
+            
+            // Check cache first
+            if (employeeCoordinates[cleanOutcode]) {
+                return employeeCoordinates[cleanOutcode];
+            }
+            
+            try {
+                const response = await fetch(`https://api.postcodes.io/outcodes/${encodeURIComponent(cleanOutcode)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.result) {
+                        const coords = { lat: data.result.latitude, lng: data.result.longitude };
+                        employeeCoordinates[cleanOutcode] = coords;
+                        return coords;
+                    }
+                }
+            } catch (e) {}
+            
+            return null;
+        }
+
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            // Haversine formula for distance in miles
+            const R = 3959; // Earth's radius in miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        async function calculateEmployeeDistances(employees) {
+            const jobLocation = document.getElementById('jobLocationInput').value.trim();
+            
+            if (!jobLocation) {
+                // No job location, clear distances
+                employees.forEach(emp => emp.distance = null);
+                return employees;
+            }
+            
+            // Get job coordinates
+            jobCoordinates = await getCoordinatesFromLocation(jobLocation);
+            
+            if (!jobCoordinates) {
+                // Couldn't find job location
+                employees.forEach(emp => emp.distance = null);
+                return employees;
+            }
+            
+            // Calculate distance for each employee
+            for (const emp of employees) {
+                if (!emp.postcode || emp.postcode === 'N/A') {
+                    emp.distance = Infinity; // N/A goes to bottom
+                } else {
+                    const empCoords = await getCoordinatesForOutcode(emp.postcode);
+                    if (empCoords) {
+                        emp.distance = calculateDistance(jobCoordinates.lat, jobCoordinates.lng, empCoords.lat, empCoords.lng);
+                    } else {
+                        emp.distance = Infinity;
+                    }
+                }
+            }
+            
+            // Sort by distance
+            employees.sort((a, b) => {
+                if (a.distance === null && b.distance === null) return 0;
+                if (a.distance === null) return 1;
+                if (b.distance === null) return -1;
+                return a.distance - b.distance;
+            });
+            
+            return employees;
+        }
+
         function initMultiSelects() {
             const containers = {
                 training: { options: TRAINING_COLUMNS, container: 'trainingOptions' },
@@ -871,8 +1009,9 @@
         }
 
         function clearAllFilters() {
-            selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [] };
+            selectedFilters = { department: '', trainings: [], hardware: [], software: [], accreditations: [], jobLocation: '' };
             document.getElementById('departmentSelect').value = '';
+            document.getElementById('jobLocationInput').value = '';
             document.getElementById('workstreamSelect').value = '';
             document.getElementById('jobTypeSelect').value = '';
             document.getElementById('jobTypeSelect').disabled = true;
@@ -883,6 +1022,7 @@
             document.querySelectorAll('.selected-tags').forEach(c => c.innerHTML = '');
             document.querySelectorAll('.filter-label .count').forEach(c => c.style.display = 'none');
             document.getElementById('activeFilters').innerHTML = '';
+            jobCoordinates = null;
             showEmptyState();
         }
 
@@ -1087,6 +1227,7 @@
                         role: fields.Role || '',
                         department: fields.Department || '',
                         manager: fields.Manager || '',
+                        postcode: fields.Postcode || 'N/A',
                         hardware: parseMultiSelect(fields.Hardware),
                         software: parseMultiSelect(fields.Software),
                         accreditations: parseMultiSelect(fields.Accreditations),
@@ -1128,7 +1269,7 @@
             return match ? parseInt(match[1]) : 0;
         }
 
-        function performSearch() {
+        async function performSearch() {
             const minRating = parseInt(document.getElementById('minTrainingRating').value) || 1;
             let results = allEmployees.filter(emp => {
                 if (selectedFilters.department && emp.department !== selectedFilters.department) return false;
@@ -1138,6 +1279,14 @@
                 for (const acc of selectedFilters.accreditations) { if (!emp.accreditations.includes(acc)) return false; }
                 return true;
             });
+            
+            // Calculate distances and sort if job location is provided
+            const jobLocation = document.getElementById('jobLocationInput').value.trim();
+            if (jobLocation) {
+                document.getElementById('resultsContainer').innerHTML = `<div class="loading"><div class="spinner"></div><p>Calculating distances...</p></div>`;
+                results = await calculateEmployeeDistances(results);
+            }
+            
             displayResults(results);
             updateActiveFiltersDisplay();
         }
@@ -1162,13 +1311,27 @@
             const matchedSoftware = selectedFilters.software.slice(0, 3).map(sw => `<span class="skill-tag software">${sw}</span>`).join('');
             const matchedAccreditations = selectedFilters.accreditations.slice(0, 3).map(acc => `<span class="skill-tag accreditation">${acc}</span>`).join('');
             const totalFilters = selectedFilters.trainings.length + selectedFilters.hardware.length + selectedFilters.software.length + selectedFilters.accreditations.length;
-            return `<div class="employee-card">${totalFilters > 0 ? `<div class="match-indicator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>Matches all ${totalFilters} requirements</div>` : ''}<div class="employee-name">${employee.name}</div><div class="employee-role">${employee.role || 'No role specified'}</div><div class="employee-meta"><div class="meta-item"><svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${employee.department || 'No dept'}</div>${employee.manager ? `<div class="meta-item"><svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>${employee.manager}</div>` : ''}</div><div class="employee-skills">${matchedTrainings}${matchedHardware}${matchedSoftware}${matchedAccreditations}</div></div>`;
+            
+            // Distance badge
+            let distanceBadge = '';
+            if (employee.distance !== null && employee.distance !== undefined) {
+                if (employee.distance === Infinity) {
+                    distanceBadge = `<div class="distance-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>No postcode</div>`;
+                } else {
+                    const miles = Math.round(employee.distance);
+                    distanceBadge = `<div class="distance-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>~${miles} mile${miles !== 1 ? 's' : ''} away</div>`;
+                }
+            }
+            
+            return `<div class="employee-card">${distanceBadge}${totalFilters > 0 ? `<div class="match-indicator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>Matches all ${totalFilters} requirements</div>` : ''}<div class="employee-name">${employee.name}</div><div class="employee-role">${employee.role || 'No role specified'}</div><div class="employee-meta"><div class="meta-item"><svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${employee.department || 'No dept'}</div>${employee.manager ? `<div class="meta-item"><svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>${employee.manager}</div>` : ''}</div><div class="employee-skills">${matchedTrainings}${matchedHardware}${matchedSoftware}${matchedAccreditations}</div></div>`;
         }
 
         function updateActiveFiltersDisplay() {
             const container = document.getElementById('activeFilters'); const tags = [];
             const minRating = document.getElementById('minTrainingRating').value;
+            const jobLocation = document.getElementById('jobLocationInput').value.trim();
             if (selectedFilters.department) tags.push(`<span class="active-filter-tag">Dept: ${selectedFilters.department}</span>`);
+            if (jobLocation) tags.push(`<span class="active-filter-tag">Location: ${jobLocation}</span>`);
             if (selectedFilters.trainings.length > 0) tags.push(`<span class="active-filter-tag">${selectedFilters.trainings.length} training(s) ≥ ${minRating}/5</span>`);
             if (selectedFilters.hardware.length > 0) tags.push(`<span class="active-filter-tag">${selectedFilters.hardware.length} hardware</span>`);
             if (selectedFilters.software.length > 0) tags.push(`<span class="active-filter-tag">${selectedFilters.software.length} software</span>`);
