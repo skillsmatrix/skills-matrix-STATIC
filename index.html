@@ -1285,6 +1285,12 @@
             if (jobLocation) {
                 document.getElementById('resultsContainer').innerHTML = `<div class="loading"><div class="spinner"></div><p>Calculating distances...</p></div>`;
                 results = await calculateEmployeeDistances(results);
+            } else {
+                // No job location - clear ALL employee distances and sort alphabetically
+                allEmployees.forEach(emp => emp.distance = null);
+                results.forEach(emp => emp.distance = null);
+                jobCoordinates = null;
+                results.sort((a, b) => a.name.localeCompare(b.name));
             }
             
             displayResults(results);
@@ -1312,7 +1318,7 @@
             const matchedAccreditations = selectedFilters.accreditations.slice(0, 3).map(acc => `<span class="skill-tag accreditation">${acc}</span>`).join('');
             const totalFilters = selectedFilters.trainings.length + selectedFilters.hardware.length + selectedFilters.software.length + selectedFilters.accreditations.length;
             
-            // Distance badge
+            // Distance badge - only show if distance was calculated
             let distanceBadge = '';
             if (employee.distance !== null && employee.distance !== undefined) {
                 if (employee.distance === Infinity) {
